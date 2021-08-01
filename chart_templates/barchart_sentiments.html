@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+
+<canvas id="myChart"></canvas>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+var json_file =JSON.parse({{data|safe}})
+var ctx = document.getElementById('myChart').getContext('2d');
+//var labels = json_file["labels"];
+//var data = json_file["count"];
+//alert(json_file['labels'])
+
+var myChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+        labels:json_file["labels"] ,
+        datasets: [{
+            label: 'Nombre de textes',
+            data: json_file["counts"],
+            borderWidth: 1
+        }]
+    },
+    options: {
+        scales: {
+            y: {
+                beginAtZero: true
+            }
+        },responsive: true,
+        plugins: {
+        legend: {
+            position: 'top',
+        },
+        title: {
+            display: true,
+            text: 'Graphique a barre des sentiments'
+        }
+        }
+
+
+    }
+});
+</script>

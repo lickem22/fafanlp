@@ -1,0 +1,34 @@
+
+
+Authentication :
+
+Steps
+- Create databases of user information and connect it to fastapi (Done)
+- add authentication paramas to necessary urls (done)
+- change the duration of validity of access_token
+- Create database models to set different types of price options and to store token
+- Create login url
+
+
+KEYWORDS:
+
+- Make the code look clean and finish it
+- Further testing if required
+
+
+
+
+SENTIMENTS 
+
+- Make the code look clean and finish it
+- Further testing if required
+
+
+DASHBOARD
+- FINISH keywords vis,
+
+- SENTIMENTS vis
+- ADD OPTIONS To vis 
+
+APP
+- Store data in mongodb daatabase
