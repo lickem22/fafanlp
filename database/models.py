@@ -41,10 +41,9 @@ class User(Base):
     time_updated = Column(DateTime(timezone=True), onupdate=func.now())
 
     def set_password(self, password):
-        self.password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
+        self.password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
     def check_password(self, password):
-        return bcrypt.checkpw(self.password.encode('utf-8'), password.encode('utf-8'))
-
+        return bcrypt.checkpw(password.encode('utf-8'),self.password.encode('utf-8'))
     @validates('username')
     def validate_username(self,key,value):
     
@@ -58,12 +57,13 @@ class User(Base):
             raise HTTPException(status_code=401, detail="invalid username: username must contain not space and no special characters") 
         else:
             return value
-
+    
     @validates('email')
     def validate_email(self,key,value):
     
         db = SessionLocal()
         if db.query(User).filter(User.email==value).first():
+            #print("passe ")
             db.close()
             raise HTTPException(status_code=401, detail=" addresse email deja utilise") 
         if not (re.search(email_regex,value)):
@@ -71,14 +71,9 @@ class User(Base):
             
         else:
             return value  
-    @validates('password') 
-    def validate_password(self,key,value):
-        if not (re.search(password_regex,value)):
-            raise HTTPException(status_code=401, detail="Password must be between 8-15 digits, containing at least one alphanumeric character one uppercase letter and one lower case letter ") 
-        else:
-            return value 
+    
     @validates('contact') 
-    def validate_password(self,key,value):
+    def validate_contact(self,key,value):
         if not (re.search(phone_regex,value)):
             raise HTTPException(status_code=401, detail="Invalid phone number  ") 
         else:
@@ -101,26 +96,30 @@ class Admin(Base):
         self.password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
     def check_password(self, password):
         return bcrypt.checkpw(self.password.encode('utf-8'), password.encode('utf-8'))
-
-
     @validates('email')
     def validate_email(self,key,value):
     
         db = SessionLocal()
-        if db.query(Admin).filter(Admin.email==value).first():
-            db.close()
+        if db.query(User).filter(User.email==value).first():
+            #db.close()
             raise HTTPException(status_code=401, detail=" addresse email deja utilise") 
         if not (re.search(email_regex,value)):
             raise HTTPException(status_code=401, detail=" addresse email invalide") 
             
         else:
             return value  
+
+    
     @validates('password') 
     def validate_password(self,key,value):
         if not (re.search(password_regex,value)):
             raise HTTPException(status_code=401, detail="Password must be between 8-15 digits, containing at least one alphanumeric character one uppercase letter and one lower case letter ") 
         else:
             return value 
+'''
+'''
+
+   
    
 #many-to-many-association
 
@@ -155,3 +154,20 @@ class Plan (Base):
     max_number = Column(Integer,default=100)
     time_created = Column(DateTime(timezone=True), server_default=func.now())
     time_updated = Column(DateTime(timezone=True), onupdate=func.now())
+    
+    
+
+
+class ApiRequest(Base):
+    __tablename__ = 'requests'
+    id = Column(Integer, primary_key=True)
+    type_request = Column(Integer, nullable=False)
+    nb_texts = Column(Integer, nullable=False)
+    user_id = Column(Integer, ForeignKey('users.id'))
+    time_created = Column(DateTime(timezone=True), server_default=func.now())
+    time_updated = Column(DateTime(timezone=True), onupdate=func.now())
+
+    def create(self,db):
+        db.add(self)
+        db.commit()
+        return self.id

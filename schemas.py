@@ -21,7 +21,13 @@ class UserAuthentication(BaseModel):
     username: str
     password: str
     email: str
-
+class PasswordForgotten(BaseModel):
+    username: str
+    email: str
+class PasswordRecovery(BaseModel):
+    username: str
+    password: str
+    email: str
 class PlanRequest(BaseModel):
     price: float
     duration: int
@@ -30,5 +36,4 @@ class PlanRequest(BaseModel):
 class MembershipRequest(BaseModel):
     left_id:int
     right_id: int
-    expiring_date: datetime.date
     expired: bool

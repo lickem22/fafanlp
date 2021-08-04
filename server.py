@@ -1,11 +1,13 @@
 from datetime import datetime
+from emails import decode_verification_token, send_recovery_mail
+from emails import send_confirmation_mail
 import os
 import time 
 import json
 from types import MemberDescriptorType
 from sqlalchemy.orm import query
 from sqlalchemy.orm import session
-
+import uvicorn
 from sqlalchemy.orm.session import Session
 
 from database.database import get_db
@@ -16,9 +18,9 @@ from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse
 from datetime import datetime
 #my packages 
-from database.models import Membership, Plan, User
-from schemas import MembershipRequest, PlanRequest, Text, UserAuthentication, UserRequest
-from auth.auth_handler import signJWT,decodeJWT
+from database.models import ApiRequest, Membership, Plan, User
+from schemas import MembershipRequest, PasswordForgotten, PasswordRecovery, PlanRequest, Text, UserAuthentication, UserRequest
+from auth.auth_handler import get_login_token, signJWT,decodeJWT
 from auth.auth_bearer import JWTBearer
 from preprocessing import preprocessing_french
 from keywords_extraction import extract_keywords2
@@ -32,10 +34,11 @@ KEYWORDS_CANDIDATES =  'models/keywords-candidates/cv.pkl'
 model = TFAutoModelForSequenceClassification.from_pretrained("tblard/tf-allocine")
 tokenizer = AutoTokenizer.from_pretrained("tblard/tf-allocine")
 
+
 #initialise app
 app = FastAPI()
 
-templates = Jinja2Templates(directory="chart_templates")
+templates = Jinja2Templates(directory="templates")
 
 @app.get("/")
 def home():
@@ -54,81 +57,226 @@ LOGIN AND SECURITY
 '''
 #create user 
 
-@app.post("/user/new",tags=["user"])
+@app.post("/users/new/",tags=["user"])
 async def user_create(user: UserRequest,db: Session = Depends(get_db) ):
     #users.append(user) # replace with db call, making sure to hash the password first
-    
-    try: 
-        to_create = User(
+    to_create = User(
         username=user.username,
         email=user.email,
         contact = user.contact,
+        password = user.password,
+        verified = False,
         #password = user.password,
         type = user.type)
-        to_create.set_password(user.password)
+    to_create.set_password(user.password)
+    try:
         db.add(to_create)
         db.commit()
-        return { 
-        "success": True,
-        "created_id": to_create.id
-    }
-    
+        if True:
+            await send_confirmation_mail([to_create.email],to_create)
     except Exception as e:
-        raise HTTPException(status_code=500, detail= "Something went wrong "+e)  
+        print(e)
+        raise HTTPException(status_code=500, detail= "Something went wrong "+e)
+    return { 
+    "success": True,
+    "created_id": to_create.id
+        }
+
+@app.post("/users/update/",tags=["user"])
+async def user_update(id:int,instance: UserRequest,db: Session = Depends(get_db) ):
+    #users.append(user) # replace with db call, making sure to hash the password first
+    user =  db.query(User).filter(User.email==instance.email).first() 
+    to_create = User(
+        username=user.username,
+        email=user.email,
+        contact = user.contact,
+        password = user.password,
+        verified = False,
+        #password = user.password,
+        type = user.type)
+    to_create.set_password(user.password)
+    if True:
+        db.add(to_create)
+        db.commit()
+    else:
+        raise HTTPException(status_code=500, detail= "Something went wrong "+e)
+    return { 
+    "success": True,
+    "created_id": to_create.id
+        }
+@app.post("/users/send-verification")
+async def resend_verification_mail(instance: PasswordForgotten,db: Session = Depends(get_db)):
+    user =  db.query(User).filter(User.email==instance.email).first() 
+    print(user)
+    if user:
+        try:
+
+            return await send_confirmation_mail([user.email],user)
+        except Exception as e:
+            print(e)
+
+    else:
+        raise  HTTPException(status_code =404, detail="User doesn't exist",headers={"WWW.Authenticate":"Bearer"} )
+#verify user
+@app.get("/users/verify",response_class=HTMLResponse)
+async def email_verification(request:Request,token:str,db: Session = Depends(get_db)):
+    try:
+        payload = await decode_verification_token(token)
+       
+    except Exception:
+         raise HTTPException(status_code =404, detail="Wrong token",headers={"WWW.Authenticate":"Bearer"} )
+
+    user =  db.query(User).filter(User.id==payload['id']).first()
+    if User:
+        if not user.verified:
+            user.verified = True
+            db.commit()
+        return templates.TemplateResponse("verified.html",{"request":request,"username":user.username})
+    else:
+        raise  HTTPException(status_code =404, detail="User doesn't exist",headers={"WWW.Authenticate":"Bearer"} )
+
+@app.post("/users/password-forgotten/",tags=["user"])
+async def password_forgotten(forgotten: PasswordForgotten,db: Session = Depends(get_db)):
+    user =  db.query(User).filter(User.username==forgotten.username).first()   
+    if user:
+        return await send_recovery_mail([user.email],user)
+
+    else:
+        raise  HTTPException(status_code =404, detail="User doesn't exist",headers={"WWW.Authenticate":"Bearer"} )
+
+
+
+ #recover password       
+@app.get("/users/password-recovery",response_class=HTMLResponse)
+async def recovery_page(request:Request,token:str,db: Session = Depends(get_db)):
+    try:
+        payload = await decode_verification_token(token)
+       
+    except Exception:
+         raise HTTPException(status_code =404, detail="Wrong token",headers={"WWW.Authenticate":"Bearer"} )
+
+    user =  db.query(User).filter(User.id==payload['id']).first()
+    if User:
+        if not user.verified:
+            raise HTTPException(status_code =403, detail="User not verified",headers={"WWW.Authenticate":"Bearer"} )
+        return templates.TemplateResponse("new_password.html",{"request":request,"username":user.username,"email":user.email})
+    else:
+        raise  HTTPException(status_code =404, detail="User doesn't exist",headers={"WWW.Authenticate":"Bearer"} )
+
+# new passwod
+@app.post("/users/newpassword")
+async def new_password(instance:PasswordRecovery,db: Session = Depends(get_db)):
+    user =  db.query(User).filter(User.username==instance.username).first()  
+    if user:
+        user.set_password(instance.password)   
+        db.commit()
+        return user.id
+    else:
+        raise HTTPException(status_code =404, detail="User doesn't exist",headers={"WWW.Authenticate":"Bearer"} )
+
+    
+@app.post("/users/login/",tags=["user"])
+async def user_create(user_auth: UserAuthentication,db: Session = Depends(get_db) ):
+    #users.append(user) # replace with db call, making sure to hash the password first
+    
+    user =  db.query(User).filter(User.email==user_auth.email).first()
+    if user:
+        
+            print(user.password)
+            print(user.check_password(user_auth.password))
+            return get_login_token(user)
+    else:
+        raise HTTPException(status_code=404, detail= "User not found  ")
 
 
  
 
-@app.post("/user/token",tags=["user"])
-async def create_token(user: UserAuthentication,db: Session = Depends(get_db)):
-    try:
-        query = db.query(Membership).join(User).filter(User.username==user.username).filter(Membership.expired==False).first()
-        if query:
-            if (query.verified):
+@app.post("/users/token",tags=["user"])
+async def token_create(instance: UserAuthentication,db: Session = Depends(get_db)):
+  
+    user= db.query(User).filter(User.username==instance.username).first()
+    query = db.query(Membership).join(User).filter(User.username==instance.username).filter(Membership.expired==False).first()
+    if query and user:
+            if (user.verified):
                 plan = db.query(Plan).filter(Plan.id==query.right_id).first()
-                return signJWT(user,query.expiring_date,plan.max_number,plan.dashboard_eligible)
+                print(plan)
+                try:
+                    return signJWT(user,query.expiring_date,plan.max_number,plan.dashboard_eligible)
+                except Exception as e:
+                    print(e)
+            else:
+                raise HTTPException(status_code=401, detail="User not verified. Please check user is verified")
+    else:
+        raise HTTPException(status_code=400, detail="Membership not found make sure you have one")
+    '''try:
+        if query and user:
+            if (user.verified):
+                plan = db.query(Plan).filter(Plan.id==query.right_id).first()
+                return signJWT(instance,query.expiring_date,plan.max_number,plan.dashboard_eligible)
             else:
                 raise HTTPException(status_code=401, detail="User not verified. PLease check user is verified")
         else:
             raise HTTPException(status_code=400, detail="Membership not found make sure you have one")
     except Exception as e:
         print(e)
-        raise HTTPException(status_code=401, detail="Somethin went wrong"+e)
+        raise HTTPException(status_code=401, detail="Somethin went wrong"+e)'''
 '''
+
 KEYBOARD EXTRACTION
 
 '''
-@app.get("/user/test",tags=["user"])
-async def create_token2(db: Session = Depends(get_db)):
-    query = db.query(Membership).join(User).filter(User.username=="fafanlp").filter(Membership.expired==False).first()
-    
-    try:
-        print(query.expiring_date)
-        
-    except Exception as e:
-        print(e)
 
-
-    return True
-
-@app.post("/member/test",tags=["user"])
+@app.post("/memberships/new",tags=["members"])
 async def create_membership(member: MembershipRequest, db: Session = Depends(get_db)):
-    dt_object = datetime.fromtimestamp(1628629068.1242206).date()
-    try:
-        to_create = Membership(
-            left_id=member.left_id,
-            right_id = member.right_id,
-            expiring_date = dt_object,
-            expired = member.expired
-            )
-        #to_create.set_password(user.password)
-        db.add(to_create)
+    #dt_object = datetime.fromtimestamp(1628629068.1242206).date()
+    timestamp_now = datetime.timestamp(datetime.now())
+    #now = datetime.now()
+    plan= db.query(Plan).filter(Plan.id==member.right_id).first()
+    print(plan.id)
+    user =  db.query(User).filter(User.id==member.left_id).first()
+    expiring_date = datetime.fromtimestamp(timestamp_now+plan.duration)
+    print(user)
+    if user and plan:
+        membership =  db.query(Membership).join(User).join(Plan).filter(Membership.left_id==user.id).filter(Membership.expired ==False).one_or_none()
+        membership.expired= True
+        if membership:
+            if membership.right_id ==plan.id:
+                
+                print(expiring_date)
+                print(expiring_date)
+                membership.expiring_date = expiring_date
+                membership.expired = False
+                
+            else:
+                new_membership =  db.query(Membership).join(User).join(Plan).filter(Membership.left_id==user.id).filter(Membership.right_id==plan.id).one_or_none()
+                
+                if new_membership:
+                    print("if")
+                    new_membership.expiring_date = expiring_date
+                    new_membership.expired = False
+                else:
+                        to_create = Membership(
+                        left_id=user.id,
+                        right_id = plan.id,
+                        expiring_date = expiring_date,
+                        expired = False
+                        )
+                        db.add(to_create)
+        else:
+            
+            to_create = Membership(
+                        left_id=user.id,
+                        right_id = plan.id,
+                        expiring_date = expiring_date,
+                        expired = False
+                        )
+            db.add(to_create)
         db.commit()
-    except Exception as e:
-        print(e)
+        
+
+
     return { 
-        "success": True,
-        "created_id": to_create.id
+        "success": True
     }
 @app.post("/plan/test",tags=["user"])
 async def create_membership(member: PlanRequest, db: Session = Depends(get_db)):
@@ -145,15 +293,22 @@ async def create_membership(member: PlanRequest, db: Session = Depends(get_db)):
         "success": True,
         "created_id": to_create.id
     }
-
+#keyboard extraction
 @app.put("/keywords-extraction/extract-keywords", dependencies=[Depends(JWTBearer())])
-async def new_keywords(text: Text,Authorization: Optional[str] = Header(None)):
+async def new_keywords(text: Text,Authorization: Optional[str] = Header(None), db: Session = Depends(get_db)):
     payload = get_payload(Authorization)
+    
     h = len(text.texts)
     #keywords_list = extract_keywords(text.texts)
-    if 101<payload['max_number']:
+    if h<payload['max_number']:
         preprocessed = preprocessing_french(text.texts)
         keywords_list = extract_keywords2(preprocessed)
+        #print(keywords_list)
+        to_create = ApiRequest(type_request=1,
+                                nb_texts = h,
+                                user_id = payload['user_id'])
+        to_create.create(db)
+             
         return keywords_list
     else:
         raise HTTPException(status_code=403, detail="You are allowed only "+str(payload['max_number'])+" texts as input")
@@ -201,13 +356,17 @@ async def train_keywords_model(company:Optional[str]=Form(...),retrain:bool = Fo
 SENTIMENT ANALYSIS
 '''
 @app.put("/sentiment-analysis/sentiments", dependencies=[Depends(JWTBearer())])
-async def analyse_sentiments(text: Text,Authorization: Optional[str] = Header(None)):
+async def analyse_sentiments(text: Text,Authorization: Optional[str] = Header(None), db: Session = Depends(get_db)):
     
     payload = get_payload(Authorization)
     h = len(text.texts)
     #keywords_list = extract_keywords(text.texts)
     if h<payload['max_number']:
         sentiments = sentiment_analysis(text.texts,model,tokenizer)
+        to_create = ApiRequest(type_request=2,
+                                nb_texts = h,
+                                user_id = payload['user_id'])
+        to_create.create(db)
         return sentiments
     else:
         raise HTTPException(status_code=403, detail="You are allowed only "+str(payload['max_number'])+" texts as input")
@@ -219,7 +378,7 @@ DASHBOARD
 
 '''
 @app.post("/save-text/csv", dependencies=[Depends(JWTBearer())])
-async def save_data(file:UploadFile = File(...),Authorization: Optional[str] = Header(None)):
+async def save_data(file:UploadFile = File(...),Authorization: Optional[str] = Header(None), db: Session = Depends(get_db)):
     dir_path = os.path.dirname(os.path.realpath(__file__))
     payload = get_payload(Authorization)
 
@@ -233,6 +392,10 @@ async def save_data(file:UploadFile = File(...),Authorization: Optional[str] = H
         f = open(f'{filename}', 'wb')
         content = await file.read()
         f.write(content)
+        to_create = ApiRequest(type_request=3,
+                                nb_texts = 0,
+                                user_id = payload['user_id'])
+        to_create.create(db)
     return json.dumps({"detail":"FILE succesfully saved "})
       
     '''
@@ -247,24 +410,35 @@ async def save_data(file:UploadFile = File(...),Authorization: Optional[str] = H
 
 
 @app.get("/dashboard/keywords/barchart", dependencies=[Depends(JWTBearer())])
-async def keywords_barchart(request: Request,Authorization: Optional[str] = Header(None)):
+async def keywords_barchart(request: Request,Authorization: Optional[str] = Header(None), db: Session = Depends(get_db)):
     #data = extract_keywords2(text.texts)
     payload = get_payload(Authorization)
     df = load_data_from_path(payload['username'])
     #df = load_data_from_path("Test")
     #print(df)
     data = keywords_count(df.text)
+    to_create = ApiRequest(type_request=4,
+                                nb_texts = len(df.text),
+                                user_id = payload['user_id'])
+    to_create.create(db)
     return templates.TemplateResponse("barchart_keywords.html", {"request": request, "data":data})
     #return data
 '''
 SENTIMENT ANALYSIS DASHBOARD
 '''
 @app.put("/dashboard/sentiments/barchart", dependencies=[Depends(JWTBearer())])
-async def keywords_barchart(text: Text,request: Request,Authorization: Optional[str] = Header(None)):
+async def keywords_barchart(text: Text,request: Request,Authorization: Optional[str] = Header(None), db: Session = Depends(get_db)):
     #data = extract_keywords2(text.texts)
     payload = get_payload(Authorization)
     if payload['is_eligible']:
         data = sentiments_count(text.texts,model,tokenizer)
+        to_create = ApiRequest(type_request=5,
+                                nb_texts = len(text.texts),
+                                user_id = payload['user_id'])
+        to_create.create(db)
         return templates.TemplateResponse("barchart_keywords.html", {"request": request, "data":data})
     else:
         return HTTPException(status_code=404,detail = "You are not eligible to this feature")
+
+if __name__ =='__main__':
+    uvicorn.run(app)
