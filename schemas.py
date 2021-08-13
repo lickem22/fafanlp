@@ -1,12 +1,12 @@
 import datetime
-from typing import Optional
+from typing import Optional, List
 
 from sqlalchemy.sql.sqltypes import DateTime
 from pydantic import BaseModel
 from typing import Optional
 
 class Text(BaseModel):
-    texts: list[str]
+    texts: List[str]
     #keywords: Optional[int]
 
 #class CustomKeywordModel(BaseModel):

@@ -1,3 +1,4 @@
+
 from datetime import datetime
 from emails import decode_verification_token, send_recovery_mail
 from emails import send_confirmation_mail
@@ -31,14 +32,25 @@ PHRASER_LOCATION = 'models/phraser.pkl'
 KEYWORDS_CANDIDATES =  'models/keywords-candidates/cv.pkl'
 
 #global variables
-model = TFAutoModelForSequenceClassification.from_pretrained("tblard/tf-allocine")
-tokenizer = AutoTokenizer.from_pretrained("tblard/tf-allocine")
+#model = TFAutoModelForSequenceClassification.from_pretrained("tblard/tf-allocine")
+#stokenizer = AutoTokenizer.from_pretrained("tblard/tf-allocine")
 
 
 #initialise app
 app = FastAPI()
-
+db1 =get_db
 templates = Jinja2Templates(directory="templates")
+
+@app.on_event("startup")
+async def startup():
+    db = get_db()
+    # create a dummy entry
+    #await User.objects.get_or_create(email="test@test.com")
+
+
+@app.on_event("shutdown")
+async def shutdown():
+    db1.close()
 
 @app.get("/")
 def home():
@@ -297,7 +309,6 @@ async def create_membership(member: PlanRequest, db: Session = Depends(get_db)):
 @app.put("/keywords-extraction/extract-keywords", dependencies=[Depends(JWTBearer())])
 async def new_keywords(text: Text,Authorization: Optional[str] = Header(None), db: Session = Depends(get_db)):
     payload = get_payload(Authorization)
-    
     h = len(text.texts)
     #keywords_list = extract_keywords(text.texts)
     if h<payload['max_number']:
@@ -316,7 +327,19 @@ async def new_keywords(text: Text,Authorization: Optional[str] = Header(None), d
     #keywords_list = extract_keywords2(text.texts)
     #get access_token
     
+@app.put("/keywords-extraction/test")
+async def test_keywords(text: Text):
+    #payload = get_payload(Authorization)
     
+    #h = len(text.texts)
+    #keywords_list = extract_keywords(text.texts)
+    
+    #preprocessed = preprocessing_french(text.texts)
+    keywords_list = extract_keywords2(text.texts)
+    return keywords_list
+        #print(keywords_list)
+    #keywords_list = extract_keywords2(text.texts)
+    #get access_token 
    
 
 '''@app.post("/keywords-extraction/train", dependencies=[Depends(JWTBearer())])
@@ -352,6 +375,7 @@ async def train_keywords_model(company:Optional[str]=Form(...),retrain:bool = Fo
     }
 
 '''
+
 '''
 SENTIMENT ANALYSIS
 '''
@@ -441,4 +465,4 @@ async def keywords_barchart(text: Text,request: Request,Authorization: Optional[
         return HTTPException(status_code=404,detail = "You are not eligible to this feature")
 
 if __name__ =='__main__':
-    uvicorn.run(app)
+    uvicorn.run("server:app",host = "0.0.0.0",port=8000)
