@@ -72,30 +72,29 @@ LOGIN AND SECURITY
 @app.post("/users/new/",tags=["user"])
 async def user_create(user: UserRequest,db: Session = Depends(get_db) ):
     #users.append(user) # replace with db call, making sure to hash the password first
+    
+    to_create = User(
+        username=user.username,
+        email=user.email,
+        contact = user.contact,
+        password = user.password,
+        verified = False,
+        #password = user.password,
+        type = user.type)
+    to_create.set_password(user.password)
     try:
-        to_create = User(
-            username=user.username,
-            email=user.email,
-            contact = user.contact,
-            password = user.password,
-            verified = False,
-            #password = user.password,
-            type = user.type)
-        to_create.set_password(user.password)
-        try:
-            db.add(to_create)
-            db.commit()
-            if True:
-                await send_confirmation_mail([to_create.email],to_create)
-        except Exception as e:
-            print(e)
-            raise HTTPException(status_code=500, detail= "Something went wrong "+e)
-        return { 
-        "success": True,
-        "created_id": to_create.id
-            }
+        db.add(to_create)
+        db.commit()
+        if True:
+            await send_confirmation_mail([to_create.email],to_create)
     except Exception as e:
         print(e)
+        raise HTTPException(status_code=500, detail= "Something went wrong "+e)
+    return { 
+    "success": True,
+    "created_id": to_create.id
+        }
+
     
 @app.post("/users/update/",tags=["user"])
 async def user_update(id:int,instance: UserRequest,db: Session = Depends(get_db) ):
