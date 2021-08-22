@@ -32,8 +32,8 @@ PHRASER_LOCATION = 'models/phraser.pkl'
 KEYWORDS_CANDIDATES =  'models/keywords-candidates/cv.pkl'
 
 #global variables
-#model = TFAutoModelForSequenceClassification.from_pretrained("tblard/tf-allocine")
-#stokenizer = AutoTokenizer.from_pretrained("tblard/tf-allocine")
+model = TFAutoModelForSequenceClassification.from_pretrained("tblard/tf-allocine")
+stokenizer = AutoTokenizer.from_pretrained("tblard/tf-allocine")
 
 
 #initialise app
