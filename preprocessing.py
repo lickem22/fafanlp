@@ -17,6 +17,7 @@ from french_lefff_lemmatizer.french_lefff_lemmatizer import FrenchLefffLemmatize
 '''
 
 def preprocessing_french(listofSentence,phraser_path ='models/phraser.pkl') :
+    nltk.download("stopwords")
     stopwords = nltk.corpus.stopwords.words('french')
     mots = set(line.strip() for line in open('dictionnaire.txt',encoding="utf8"))
     lemmatizer = FrenchLefffLemmatizer()
