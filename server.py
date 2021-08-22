@@ -346,9 +346,10 @@ async def test_keywords(text: Text):
     
         preprocessed = preprocessing_french(text.texts)
         keywords_list = extract_keywords2(preprocessed)
+        return keywords_list
     except Exception as e:
         print(e)
-    return keywords_list
+    
         #print(keywords_list)
     #keywords_list = extract_keywords2(text.texts)
     #get access_token 
