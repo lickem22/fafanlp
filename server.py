@@ -320,8 +320,8 @@ async def new_keywords(text: Text,Authorization: Optional[str] = Header(None), d
     #keywords_list = extract_keywords(text.texts)
     if h<payload['max_number']:
         print(True)
-        preprocessed = preprocessing_french(text.texts)
-        keywords_list = extract_keywords2(preprocessed)
+        #preprocessed = preprocessing_french(text.texts)
+        keywords_list = extract_keywords2(text.texts)
         #print(keywords_list)
         print("ok")
         to_create = ApiRequest(type_request=1,
