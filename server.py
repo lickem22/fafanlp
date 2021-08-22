@@ -123,11 +123,9 @@ async def resend_verification_mail(instance: PasswordForgotten,db: Session = Dep
     user =  db.query(User).filter(User.email==instance.email).first() 
     print(user)
     if user:
-        try:
 
-            return await send_confirmation_mail([user.email],user)
-        except Exception as e:
-            print(e)
+        return await send_confirmation_mail([user.email],user)
+            
 
     else:
         raise  HTTPException(status_code =404, detail="User doesn't exist",headers={"WWW.Authenticate":"Bearer"} )
@@ -151,12 +149,15 @@ async def email_verification(request:Request,token:str,db: Session = Depends(get
 
 @app.post("/users/password-forgotten/",tags=["user"])
 async def password_forgotten(forgotten: PasswordForgotten,db: Session = Depends(get_db)):
-    user =  db.query(User).filter(User.username==forgotten.username).first()   
-    if user:
-        return await send_recovery_mail([user.email],user)
+    try:
+        user =  db.query(User).filter(User.username==forgotten.username).first()   
+        if user:
+            return await send_recovery_mail([user.email],user)
 
-    else:
-        raise  HTTPException(status_code =404, detail="User doesn't exist",headers={"WWW.Authenticate":"Bearer"} )
+        else:
+            raise  HTTPException(status_code =404, detail="User doesn't exist",headers={"WWW.Authenticate":"Bearer"} )
+    except Exception as e:
+        print(e)
 
 
 
@@ -311,20 +312,23 @@ async def create_membership(member: PlanRequest, db: Session = Depends(get_db)):
         "created_id": to_create.id
     }
 #keyboard extraction
-@app.put("/keywords-extraction/extract-keywords", dependencies=[Depends(JWTBearer())])
+@app.put("/keywords-extraction/extract-keywords", tags=["keywords"],dependencies=[Depends(JWTBearer())])
 async def new_keywords(text: Text,Authorization: Optional[str] = Header(None), db: Session = Depends(get_db)):
     payload = get_payload(Authorization)
     h = len(text.texts)
+    print(h)
     #keywords_list = extract_keywords(text.texts)
     if h<payload['max_number']:
+        print(True)
         preprocessed = preprocessing_french(text.texts)
         keywords_list = extract_keywords2(preprocessed)
         #print(keywords_list)
+        print("ok")
         to_create = ApiRequest(type_request=1,
                                 nb_texts = h,
                                 user_id = payload['user_id'])
         to_create.create(db)
-             
+        print("fine")  
         return keywords_list
     else:
         raise HTTPException(status_code=403, detail="You are allowed only "+str(payload['max_number'])+" texts as input")
@@ -384,7 +388,7 @@ async def train_keywords_model(company:Optional[str]=Form(...),retrain:bool = Fo
 '''
 SENTIMENT ANALYSIS
 '''
-@app.put("/sentiment-analysis/sentiments", dependencies=[Depends(JWTBearer())])
+@app.put("/sentiment-analysis/sentiments",tags=["sentiments"], dependencies=[Depends(JWTBearer())])
 async def analyse_sentiments(text: Text,Authorization: Optional[str] = Header(None), db: Session = Depends(get_db)):
     
     payload = get_payload(Authorization)
@@ -406,7 +410,7 @@ async def analyse_sentiments(text: Text,Authorization: Optional[str] = Header(No
 DASHBOARD 
 
 '''
-@app.post("/save-text/csv", dependencies=[Depends(JWTBearer())])
+@app.post("/save-text/csv",tags=["dashboard"] ,dependencies=[Depends(JWTBearer())])
 async def save_data(file:UploadFile = File(...),Authorization: Optional[str] = Header(None), db: Session = Depends(get_db)):
     dir_path = os.path.dirname(os.path.realpath(__file__))
     payload = get_payload(Authorization)
@@ -438,7 +442,7 @@ async def save_data(file:UploadFile = File(...),Authorization: Optional[str] = H
 
 
 
-@app.get("/dashboard/keywords/barchart", dependencies=[Depends(JWTBearer())])
+@app.get("/dashboard/keywords/barchart",tags=["dashboard"], dependencies=[Depends(JWTBearer())])
 async def keywords_barchart(request: Request,Authorization: Optional[str] = Header(None), db: Session = Depends(get_db)):
     #data = extract_keywords2(text.texts)
     payload = get_payload(Authorization)
@@ -455,7 +459,7 @@ async def keywords_barchart(request: Request,Authorization: Optional[str] = Head
 '''
 SENTIMENT ANALYSIS DASHBOARD
 '''
-@app.put("/dashboard/sentiments/barchart", dependencies=[Depends(JWTBearer())])
+@app.put("/dashboard/sentiments/barchart", tags=["dashboard"],dependencies=[Depends(JWTBearer())])
 async def keywords_barchart(text: Text,request: Request,Authorization: Optional[str] = Header(None), db: Session = Depends(get_db)):
     #data = extract_keywords2(text.texts)
     payload = get_payload(Authorization)
