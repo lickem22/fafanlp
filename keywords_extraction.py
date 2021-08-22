@@ -28,7 +28,6 @@ def train_tfidf(documents,ngram_range=(1,2),name_tfidf='tf_idf.pkl',name_cv='cv.
 
 '''
     Functions to get keywords
-
 '''
 def sort_coo(coo_matrix):
     tuples = zip(coo_matrix.col, coo_matrix.data)

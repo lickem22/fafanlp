@@ -342,9 +342,12 @@ async def test_keywords(text: Text):
     
     #h = len(text.texts)
     #keywords_list = extract_keywords(text.texts)
+    try:
     
-    #preprocessed = preprocessing_french(text.texts)
-    keywords_list = extract_keywords2(text.texts)
+        preprocessed = preprocessing_french(text.texts)
+        keywords_list = extract_keywords2(preprocessed)
+    except Exception as e:
+        print(e)
     return keywords_list
         #print(keywords_list)
     #keywords_list = extract_keywords2(text.texts)
