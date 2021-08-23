@@ -1,5 +1,5 @@
 #from server import new_keywords
-from preprocessing import preprocessing_french
+from preprocessing import preprocessing_french2
 import numpy as np 
 import pandas as pd
 import json
@@ -38,7 +38,7 @@ def keywords_count(keywords,isKeyword = False):
         #return 0
     else:
         #preprocess data
-        preprocessed = preprocessing_french(keywords)
+        preprocessed = preprocessing_french2(keywords)
         #
         #print(extract_keywords2(preprocessed))
         #get keywords add all to the same array

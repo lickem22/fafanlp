@@ -3,7 +3,10 @@ import os
 import glob
 import nltk
 import string
-from french_lefff_lemmatizer.french_lefff_lemmatizer import FrenchLefffLemmatizer
+#from french_lefff_lemmatizer.french_lefff_lemmatizer import FrenchLefffLemmatizer
+import spacy
+#from spacy_lefff import LefffLemmatizer, POSTagger
+from spacy.lang.fr.stop_words import STOP_WORDS as fr_stop
 #from gensim.models.phrases import Phrases, Phraser
 #initialise phraser
 #et phrases
@@ -50,6 +53,39 @@ def preprocessing_french(listofSentence,phraser_path ='models/phraser.pkl') :
     The phraser will help to link words that have a meaning when used together
     (for example, New York will be New_York)
 '''
+def preprocessing_french2(listofSentence,phraser_path ='models/phraser.pkl') :
+    #stopwords = nltk.corpus.stopwords.words('french')
+    stopwords = fr_stop
+    nlp = spacy.load('fr_core_news_md')
+    #mots = set(line.strip() for line in open('dictionnaire.txt',encoding="utf8"))
+    preprocess_list = []
+    for sentence in listofSentence :
+        #words without punctuation and with lowercase only
+        sentence_w_punct = "".join([i.lower() for i in sentence if i not in string.punctuation])
+
+        #get rid of digits
+        sentence_w_num = ''.join(i for i in sentence_w_punct if not i.isdigit())
+
+        #tokenize sentence
+        tokenize_sentence = nltk.tokenize.word_tokenize(sentence_w_num)
+
+        #Remove stopwords
+        words_w_stopwords = [i for i in tokenize_sentence if i not in stopwords]
+        
+        join = ' '.join(w for w in words_w_stopwords)
+        words_lemmatize = [token.lemma_ for token in nlp(join)]
+
+        #lemmatize words: Only keep the root
+        #sentence_clean = ' '.join(w for w in words_lemmatize if w.lower() in mots or not w.isalpha())
+        sentence_clean = ' '.join(w for w in words_lemmatize if w.lower())
+
+        preprocess_list.append(sentence_clean)
+
+        #phrase documents
+        #processed_text = phrase_documents(preprocess_list,phraser_path)
+
+
+    return preprocess_list
 def phrase_documents(documents,path='models/phraser.pkl'):
     bigram = Phraser.load(path)
     queries = bigram[documents]

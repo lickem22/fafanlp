@@ -31,4 +31,10 @@ DASHBOARD
 - ADD OPTIONS To vis 
 
 APP
-- Store data in mongodb daatabase
+- Store data in mongodb 
+
+Augusts
+
+- Store files using Amazon S3
+- Find another way to do sentiment analysis
+- find another lemmatizer

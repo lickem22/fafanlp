@@ -23,22 +23,20 @@ from database.models import ApiRequest, Membership, Plan, User
 from schemas import MembershipRequest, PasswordForgotten, PasswordRecovery, PlanRequest, Text, UserAuthentication, UserRequest
 from auth.auth_handler import get_login_token, signJWT,decodeJWT
 from auth.auth_bearer import JWTBearer
-from preprocessing import preprocessing_french
+from preprocessing import preprocessing_french2
 from keywords_extraction import extract_keywords2
 from sentiment_analysis import sentiment_analysis
 from utils import before_save_file, folder_exists,get_payload, load_data_from_path
 from dashboard import keywords_count, sentiments_count
-PHRASER_LOCATION = 'models/phraser.pkl'
-KEYWORDS_CANDIDATES =  'models/keywords-candidates/cv.pkl'
+
 
 #global variables
 #model = TFAutoModelForSequenceClassification.from_pretrained("tblard/tf-allocine")
-#stokenizer = AutoTokenizer.from_pretrained("tblard/tf-allocine")
+#tokenizer = AutoTokenizer.from_pretrained("tblard/tf-allocine")
 
 
 #initialise app
 app = FastAPI()
-db1 =get_db
 templates = Jinja2Templates(directory="templates")
 
 @app.on_event("startup")
@@ -320,16 +318,19 @@ async def new_keywords(text: Text,Authorization: Optional[str] = Header(None), d
     #keywords_list = extract_keywords(text.texts)
     if h<payload['max_number']:
         print(True)
-        #preprocessed = preprocessing_french(text.texts)
-        keywords_list = extract_keywords2(text.texts)
-        #print(keywords_list)
-        print("ok")
-        to_create = ApiRequest(type_request=1,
-                                nb_texts = h,
-                                user_id = payload['user_id'])
-        to_create.create(db)
-        print("fine")  
-        return keywords_list
+        try:
+            preprocessed = preprocessing_french2(text.texts)
+            keywords_list = extract_keywords2(preprocessed)
+            #print(keywords_list)
+            print("ok")
+            to_create = ApiRequest(type_request=1,
+                                    nb_texts = h,
+                                    user_id = payload['user_id'])
+            to_create.create(db)
+            print("fine")  
+            return keywords_list
+        except Exception as e:
+            print(e)
     else:
         raise HTTPException(status_code=403, detail="You are allowed only "+str(payload['max_number'])+" texts as input")
 
@@ -344,7 +345,7 @@ async def test_keywords(text: Text):
     #keywords_list = extract_keywords(text.texts)
     try:
     
-        preprocessed = preprocessing_french(text.texts)
+        preprocessed = preprocessing_french2(text.texts)
         keywords_list = extract_keywords2(preprocessed)
         return keywords_list
     except Exception as e:
@@ -399,15 +400,16 @@ async def analyse_sentiments(text: Text,Authorization: Optional[str] = Header(No
     h = len(text.texts)
     #keywords_list = extract_keywords(text.texts)
     if h<payload['max_number']:
+        
         sentiments = sentiment_analysis(text.texts,model,tokenizer)
         to_create = ApiRequest(type_request=2,
                                 nb_texts = h,
                                 user_id = payload['user_id'])
         to_create.create(db)
         return sentiments
+
     else:
         raise HTTPException(status_code=403, detail="You are allowed only "+str(payload['max_number'])+" texts as input")
-    return sentiments
 
 
 '''

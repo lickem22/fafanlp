@@ -1,11 +1,12 @@
 from sklearn.feature_extraction.text import CountVectorizer
-import nltk
+#import nltk
 import joblib
 from fastapi import HTTPException
 
 from sklearn.feature_extraction.text import TfidfTransformer
 from rake_nltk import Rake
-from stop_words import get_stop_words
+#from stop_words import get_stop_words
+from spacy.lang.fr.stop_words import STOP_WORDS as fr_stop
 import yake
 
 PATH_TFIDF = 'models/tfidf/'
@@ -77,8 +78,8 @@ def get_keywords(documents,n_keywords=10,name_tfidf='tfidf.pkl',name_cv='cv.pkl'
 
     return keywords_list
 def extract_keywords(documents):
-    french_stopwords = get_stop_words('fr')
-    r = Rake(language='french',stopwords = french_stopwords)
+    #french_stopwords = get_stop_words('fr')
+    r = Rake(language='french',stopwords = fr_stop)
     keywords = []
     if isinstance(documents, list):
         for  document in documents:
