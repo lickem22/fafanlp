@@ -58,7 +58,7 @@ def preprocessing_french2(listofSentence,phraser_path ='models/phraser.pkl') :
     nlp = spacy.load('fr_core_news_sm')
     #stopwords = nltk.corpus.stopwords.words('french')
     stopwords = fr_stop
-    nlp = joblib.load('spacy.pkl')
+    #nlp = joblib.load('spacy.pkl')
     #mots = set(line.strip() for line in open('dictionnaire.txt',encoding="utf8"))
     preprocess_list = []
     for sentence in listofSentence :
