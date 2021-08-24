@@ -96,7 +96,7 @@ def extract_keywords(documents):
     return keywords
 
 def extract_keywords2(documents,nb_keywords=5):
-    extractor = yake.KeywordExtractor()
+    #extractor = yake.KeywordExtractor()
     language = "fr"
     max_ngram_size = 2
     deduplication_threshold = 0.9

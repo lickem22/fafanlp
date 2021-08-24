@@ -55,6 +55,7 @@ def preprocessing_french(listofSentence,phraser_path ='models/phraser.pkl') :
     (for example, New York will be New_York)
 '''
 def preprocessing_french2(listofSentence,phraser_path ='models/phraser.pkl') :
+    nlp = spacy.load('fr_core_news_sm')
     #stopwords = nltk.corpus.stopwords.words('french')
     stopwords = fr_stop
     nlp = spacy.load('fr_core_news_sm')
@@ -84,8 +85,7 @@ def preprocessing_french2(listofSentence,phraser_path ='models/phraser.pkl') :
 
         #phrase documents
         #processed_text = phrase_documents(preprocess_list,phraser_path)
-
-
+    del nlp
     return preprocess_list
 def phrase_documents(documents,path='models/phraser.pkl'):
     bigram = Phraser.load(path)
