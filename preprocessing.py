@@ -8,7 +8,7 @@ import spacy
 #from spacy_lefff import LefffLemmatizer, POSTagger
 from spacy.lang.fr.stop_words import STOP_WORDS as fr_stop
 #from gensim.models.phrases import Phrases, Phraser
-nlp = spacy.load('fr_core_news_sm')
+import joblib
 #initialise phraser
 #et phrases
     #pass
@@ -58,7 +58,7 @@ def preprocessing_french2(listofSentence,phraser_path ='models/phraser.pkl') :
     nlp = spacy.load('fr_core_news_sm')
     #stopwords = nltk.corpus.stopwords.words('french')
     stopwords = fr_stop
-    nlp = spacy.load('fr_core_news_sm')
+    nlp = joblib.load('spacy')
     #mots = set(line.strip() for line in open('dictionnaire.txt',encoding="utf8"))
     preprocess_list = []
     for sentence in listofSentence :
