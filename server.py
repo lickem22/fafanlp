@@ -1,4 +1,5 @@
 
+
 from datetime import datetime
 from emails import decode_verification_token, send_recovery_mail
 from emails import send_confirmation_mail
@@ -12,7 +13,7 @@ import uvicorn
 from sqlalchemy.orm.session import Session
 
 from database.database import get_db
-from transformers import AutoTokenizer, TFAutoModelForSequenceClassification
+#from transformers import AutoTokenizer, TFAutoModelForSequenceClassification
 from fastapi import FastAPI,Header,UploadFile,File,Form,Request,Body,Depends,HTTPException
 from typing import List,Optional
 from fastapi.templating import Jinja2Templates
@@ -26,6 +27,7 @@ from auth.auth_bearer import JWTBearer
 from preprocessing import preprocessing_french2
 from keywords_extraction import extract_keywords2
 from sentiment_analysis import sentiment_analysis
+from sentiment_analysis import sentiment_analysis2
 from utils import before_save_file, folder_exists,get_payload, load_data_from_path
 from dashboard import keywords_count, sentiments_count
 
@@ -314,23 +316,22 @@ async def create_membership(member: PlanRequest, db: Session = Depends(get_db)):
 async def new_keywords(text: Text,Authorization: Optional[str] = Header(None), db: Session = Depends(get_db)):
     payload = get_payload(Authorization)
     h = len(text.texts)
-    print(h)
+    #print(h)
     #keywords_list = extract_keywords(text.texts)
     if h<payload['max_number']:
-        print(True)
-        try:
-            preprocessed = preprocessing_french2(text.texts)
-            keywords_list = extract_keywords2(preprocessed)
-            #print(keywords_list)
-            print("ok")
-            to_create = ApiRequest(type_request=1,
-                                    nb_texts = h,
-                                    user_id = payload['user_id'])
-            to_create.create(db)
-            print("fine")  
-            return keywords_list
-        except Exception as e:
-            print(e)
+        #print(True)
+        
+        preprocessed = preprocessing_french2(text.texts)
+        keywords_list = extract_keywords2(preprocessed)
+        #print(preprocessed)
+        #print("ok")
+        to_create = ApiRequest(type_request=1,
+                                nb_texts = h,
+                                user_id = payload['user_id'])
+        to_create.create(db)
+        #print("fine")  
+        return keywords_list
+
     else:
         raise HTTPException(status_code=403, detail="You are allowed only "+str(payload['max_number'])+" texts as input")
 
@@ -346,6 +347,7 @@ async def test_keywords(text: Text):
     try:
     
         preprocessed = preprocessing_french2(text.texts)
+        print(preprocessed)
         keywords_list = extract_keywords2(preprocessed)
         return keywords_list
     except Exception as e:
@@ -400,13 +402,22 @@ async def analyse_sentiments(text: Text,Authorization: Optional[str] = Header(No
     h = len(text.texts)
     #keywords_list = extract_keywords(text.texts)
     if h<payload['max_number']:
-        
-        sentiments = sentiment_analysis(text.texts,model,tokenizer)
-        to_create = ApiRequest(type_request=2,
-                                nb_texts = h,
-                                user_id = payload['user_id'])
-        to_create.create(db)
-        return sentiments
+        try:
+            #preprocessed = preprocessing_french2(text.texts)
+            #print(preprocessed)
+            #sentiments = sentiment_analysis(text.texts,model,tokenizer)
+            sentiments = sentiment_analysis2(text.texts)
+            #print(sentiments)
+            to_create = ApiRequest(type_request=2,
+                                    nb_texts = h,
+                                    user_id = payload['user_id'])
+
+            to_create.create(db)
+            return sentiments
+        except Exception as e:
+            print(e)
+            raise HTTPException(status_code=500, detail=" Something went wrong. Try again later")
+
 
     else:
         raise HTTPException(status_code=403, detail="You are allowed only "+str(payload['max_number'])+" texts as input")

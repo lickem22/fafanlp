@@ -37,4 +37,14 @@ Augusts
 
 - Store files using Amazon S3
 - Find another way to do sentiment analysis
-- find another lemmatizer
+- find another lemmatizer (DONE)
+
+[
+    "POSITIF",
+    "NEGATIF",
+    "NEUTRE",
+    "NEGATIF",
+    "NEGATIF",
+    "NEUTRE",
+    "POSITIF"
+]
