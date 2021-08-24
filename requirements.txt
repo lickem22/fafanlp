@@ -33,7 +33,7 @@ fastapi==0.66.0
 fastapi-mail==0.4.0
 filelock==3.0.12
 flatbuffers==1.12
-fr-core-news-md @ https://github.com/explosion/spacy-models/releases/download/fr_core_news_md-3.1.0/fr_core_news_md-3.1.0-py3-none-any.whl
+fr-core-news-sm @ https://github.com/explosion/spacy-models/releases/download/fr_core_news_sm-3.1.0/fr_core_news_sm-3.1.0-py3-none-any.whl
 gast==0.4.0
 google-auth==1.33.0
 google-auth-oauthlib==0.4.4
@@ -115,7 +115,6 @@ tabulate==0.8.9
 tensorboard==2.5.0
 tensorboard-data-server==0.6.1
 tensorboard-plugin-wit==1.8.0
-tensorflow-cpu==2.5.0
 tensorflow-estimator==2.5.0
 termcolor==1.1.0
 textblob==0.15.3
