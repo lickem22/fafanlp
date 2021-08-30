@@ -1,5 +1,5 @@
 #from transformers import AutoTokenizer, TFAutoModelForSequenceClassification
-from transformers import pipeline
+#from transformers import pipeline
 from textblob import Blobber
 from textblob_fr import PatternTagger, PatternAnalyzer
 tb = Blobber(pos_tagger=PatternTagger(), analyzer=PatternAnalyzer())
