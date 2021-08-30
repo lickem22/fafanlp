@@ -1,5 +1,3 @@
-
-
 from datetime import datetime
 from emails import decode_verification_token, send_recovery_mail
 from emails import send_confirmation_mail
@@ -11,7 +9,7 @@ from sqlalchemy.orm import query
 from sqlalchemy.orm import session
 import uvicorn
 from sqlalchemy.orm.session import Session
-
+import nltk
 from database.database import get_db
 #from transformers import AutoTokenizer, TFAutoModelForSequenceClassification
 from fastapi import FastAPI,Header,UploadFile,File,Form,Request,Body,Depends,HTTPException
@@ -21,7 +19,7 @@ from fastapi.responses import HTMLResponse
 from datetime import datetime
 #my packages 
 from database.models import ApiRequest, Membership, Plan, User
-from schemas import MembershipRequest, PasswordForgotten, PasswordRecovery, PlanRequest, Text, UserAuthentication, UserRequest
+from schemas import MembershipRequest, PasswordForgotten, PasswordRecovery, PlanRequest, Text, UserAuthentication, UserLogin, UserRequest
 from auth.auth_handler import get_login_token, signJWT,decodeJWT
 from auth.auth_bearer import JWTBearer
 from preprocessing import preprocessing_french2
@@ -43,7 +41,7 @@ templates = Jinja2Templates(directory="templates")
 
 @app.on_event("startup")
 async def startup():
-    db = get_db()
+    nltk.download('punkt')
     # create a dummy entry
     #await User.objects.get_or_create(email="test@test.com")
 
@@ -191,14 +189,12 @@ async def new_password(instance:PasswordRecovery,db: Session = Depends(get_db)):
 
     
 @app.post("/users/login/",tags=["user"])
-async def user_create(user_auth: UserAuthentication,db: Session = Depends(get_db) ):
+async def user_create(user_auth: UserLogin,db: Session = Depends(get_db) ):
     #users.append(user) # replace with db call, making sure to hash the password first
     
     user =  db.query(User).filter(User.email==user_auth.email).first()
     if user:
         
-            print(user.password)
-            print(user.check_password(user_auth.password))
             return get_login_token(user)
     else:
         raise HTTPException(status_code=404, detail= "User not found  ")
