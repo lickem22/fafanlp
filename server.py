@@ -39,12 +39,12 @@ from dashboard import keywords_count, sentiments_count
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
 
-@app.on_event("startup")
+'''@app.on_event("startup")
 async def startup():
     nltk.download('punkt')
     # create a dummy entry
     #await User.objects.get_or_create(email="test@test.com")
-
+'''
 
 @app.on_event("shutdown")
 async def shutdown():

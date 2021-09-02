@@ -1,9 +1,9 @@
-from sklearn.feature_extraction.text import CountVectorizer
+#from sklearn.feature_extraction.text import CountVectorizer
 #import nltk
 import joblib
 from fastapi import HTTPException
 
-from sklearn.feature_extraction.text import TfidfTransformer
+#from sklearn.feature_extraction.text import TfidfTransformer
 #from rake_nltk import Rake
 #from stop_words import get_stop_words
 from spacy.lang.fr.stop_words import STOP_WORDS as fr_stop
