@@ -312,7 +312,7 @@ async def create_membership(member: PlanRequest, db: Session = Depends(get_db)):
 async def new_keywords(text: Text,Authorization: Optional[str] = Header(None), db: Session = Depends(get_db)):
     payload = get_payload(Authorization)
     h = len(text.texts)
-    #print(h)
+    print(payload)
     #keywords_list = extract_keywords(text.texts)
     if h<payload['max_number']:
         #print(True)
