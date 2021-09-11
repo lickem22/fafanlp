@@ -29,7 +29,6 @@ idna==3.2
 jellyfish==0.8.8
 Jinja2==3.0.1
 joblib==1.0.1
-jwt==1.7.1
 MarkupSafe==2.0.1
 murmurhash==1.0.5
 networkx==2.6.2
@@ -42,6 +41,7 @@ preshed==3.0.5
 psycopg2==2.9.1
 pycparser==2.20
 pydantic==1.8.2
+PyJWT==1.7.1
 pyparsing==2.4.7
 python-dateutil==2.8.2
 python-decouple==3.4
