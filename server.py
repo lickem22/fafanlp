@@ -16,6 +16,7 @@ from fastapi import FastAPI,Header,UploadFile,File,Form,Request,Body,Depends,HTT
 from typing import List,Optional
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse
+from fastapi.middleware.cors import CORSMiddleware
 from datetime import datetime
 #my packages 
 from database.models import ApiRequest, Membership, Plan, User
@@ -34,9 +35,20 @@ from dashboard import keywords_count, sentiments_count
 #model = TFAutoModelForSequenceClassification.from_pretrained("tblard/tf-allocine")
 #tokenizer = AutoTokenizer.from_pretrained("tblard/tf-allocine")
 
+origins = [
+   "*"
+]
+
 
 #initialise app
 app = FastAPI()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 templates = Jinja2Templates(directory="templates")
 
 '''@app.on_event("startup")
