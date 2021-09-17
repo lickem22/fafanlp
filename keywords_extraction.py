@@ -113,5 +113,22 @@ def extract_keywords2(documents,nb_keywords=5):
     else:
         raise HTTPException(status_code = 404,detail ="Type list required")
     return keywords_lst
-
+def extract_keywords_dashboard(documents,nb_keywords=5):
+    #extractor = yake.KeywordExtractor()
+    language = "fr"
+    max_ngram_size = 1
+    deduplication_threshold = 0.9
+    keywords_lst = []
+    if isinstance(documents, list):
+        for  document in documents:
+            if isinstance(document, str) and len(document.split())>2:
+                custom_kw_extractor = yake.KeywordExtractor(lan=language, n=max_ngram_size, dedupLim=deduplication_threshold, top=nb_keywords, features=None)
+                keywords = custom_kw_extractor.extract_keywords(document)
+                keywords_lst.append([keyword[0] for keyword in keywords])
+            elif len(document.split())<=2 :
+                keywords_lst.append([])
+                #raise HTTPException(status_code = ,detail ="Each text should have more than "
+    else:
+        raise HTTPException(status_code = 404,detail ="Type list required")
+    return keywords_lst
 

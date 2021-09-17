@@ -105,7 +105,11 @@ async def user_create(user: UserRequest,db: Session = Depends(get_db) ):
     "created_id": to_create.id
         }
 
-    
+@app.get("/users/get/",tags=["user"])   
+async def get_user(email: str,db: Session = Depends(get_db)):
+    user =  db.query(User).filter(User.email==email).first() 
+    return user
+
 @app.post("/users/update/",tags=["user"])
 async def user_update(id:int,instance: UserRequest,db: Session = Depends(get_db) ):
     #users.append(user) # replace with db call, making sure to hash the password first
@@ -131,7 +135,7 @@ async def user_update(id:int,instance: UserRequest,db: Session = Depends(get_db)
 @app.post("/users/send-verification")
 async def resend_verification_mail(instance: PasswordForgotten,db: Session = Depends(get_db)):
     user =  db.query(User).filter(User.email==instance.email).first() 
-    print(user)
+    print(user.id)
     if user:
 
         return await send_confirmation_mail([user.email],user)
@@ -456,18 +460,12 @@ async def save_data(file:UploadFile = File(...),Authorization: Optional[str] = H
         to_create.create(db)
     return json.dumps({"detail":"FILE succesfully saved "})
       
-    '''
-    df = get_df(f,content,retrain)
-    if is_valid(df,unsupervised=True)==True:
-        f.write(content)
-        train_tfidf(df['text'],(1,2),'tf_idf_Test.pkl','cv_Test.pkl','candidates_Test.pkl')
-    else:
-        return is_valid(df,True)
-    ''' 
 
 
 
-@app.get("/dashboard/keywords/barchart",tags=["dashboard"], dependencies=[Depends(JWTBearer())])
+
+'''
+app.get("/dashboard/keywords/barchart",tags=["dashboard"], dependencies=[Depends(JWTBearer())])
 async def keywords_barchart(request: Request,Authorization: Optional[str] = Header(None), db: Session = Depends(get_db)):
     #data = extract_keywords2(text.texts)
     payload = get_payload(Authorization)
@@ -482,21 +480,41 @@ async def keywords_barchart(request: Request,Authorization: Optional[str] = Head
     return templates.TemplateResponse("barchart_keywords.html", {"request": request, "data":data})
     #return data
 '''
+
+'''
 SENTIMENT ANALYSIS DASHBOARD
 '''
 @app.put("/dashboard/sentiments/barchart", tags=["dashboard"],dependencies=[Depends(JWTBearer())])
-async def keywords_barchart(text: Text,request: Request,Authorization: Optional[str] = Header(None), db: Session = Depends(get_db)):
+async def sentiments_barchart(text: Text,request: Request,Authorization: Optional[str] = Header(None), db: Session = Depends(get_db)):
     #data = extract_keywords2(text.texts)
     payload = get_payload(Authorization)
     if payload['is_eligible']:
-        data = sentiments_count(text.texts,model,tokenizer)
+        data = sentiments_count(text.texts)
         to_create = ApiRequest(type_request=5,
                                 nb_texts = len(text.texts),
                                 user_id = payload['user_id'])
         to_create.create(db)
-        return templates.TemplateResponse("barchart_keywords.html", {"request": request, "data":data})
+        return templates.TemplateResponse("barchart_sentiments.html", {"request": request, "data":data})
     else:
         return HTTPException(status_code=404,detail = "You are not eligible to this feature")
 
+@app.put("/dashboard/keywords/barchart",tags=["dashboard"],dependencies=[Depends(JWTBearer())])
+async def keywords_barchart(text: Text,request: Request,Authorization: Optional[str] = Header(None), db: Session = Depends(get_db)):
+    #data = extract_keywords2(text.texts)
+    payload = get_payload(Authorization)
+    if payload['is_eligible']:
+    #df = load_data_from_path(payload['username'])
+    #df = load_data_from_path("Test")
+    #print(df)
+        print(text.texts)
+        data = keywords_count(text.texts)
+        print(data)
+        to_create = ApiRequest(type_request=4,
+                                    nb_texts = len(text.texts),
+                                    user_id = payload['user_id'])
+        to_create.create(db)
+        return templates.TemplateResponse("barchart_keywords.html", {"request": request, "data":data})
+    else:
+        return HTTPException(status_code=404,detail = "You are not eligible to this feature")
 if __name__ =='__main__':
     uvicorn.run("server:app",host = "0.0.0.0",port=8000)

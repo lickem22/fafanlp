@@ -3,8 +3,8 @@ from preprocessing import preprocessing_french2
 import numpy as np 
 import pandas as pd
 import json
-from keywords_extraction import extract_keywords2
-from sentiment_analysis import sentiment_analysis
+from keywords_extraction import extract_keywords2, extract_keywords_dashboard
+from sentiment_analysis import sentiment_analysis, sentiment_analysis2
 
 '''
 get the data in a json format for keyboard extraction. 
@@ -42,14 +42,17 @@ def keywords_count(keywords,isKeyword = False):
         #
         #print(extract_keywords2(preprocessed))
         #get keywords add all to the same array
-        raw_data = sum(extract_keywords2(preprocessed),[])
+        keywords = extract_keywords_dashboard(preprocessed)
+        print(keywords)
+        raw_data = sum(keywords,[])
+        print(raw_data)
         data = keywords_count(raw_data,True)
         return json.dumps(data)
         
 
 #sentiments
 
-def sentiments_count(array,model,tokenizer,isSentiment=False):
+def sentiments_count(array,isSentiment=False):
     if isSentiment:
         x = np.array(array)
         data = dict({})
@@ -63,5 +66,5 @@ def sentiments_count(array,model,tokenizer,isSentiment=False):
         data["counts"] = counts
         return json.dumps(data)
     else:
-        data = sentiments_count(sentiment_analysis(array,model,tokenizer),model,tokenizer,True)
+        data = sentiments_count(sentiment_analysis2(array),True)
         return json.dumps(data)
